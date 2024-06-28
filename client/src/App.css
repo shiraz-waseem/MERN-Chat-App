@@ -1,0 +1,12 @@
+@import url("https://fonts.googleapis.com/css2?family=Work+Sans:wght@300&display=swap");
+
+.App {
+    min-height: 100vh;
+    display: flex;
+    background-image: url("./background.png");
+
+    /* will not repeat */
+    background-position: center;
+    background-size: cover;
+
+}
