@@ -8,14 +8,74 @@ import {
   InputRightElement,
   Button,
 } from "@chakra-ui/react";
+import { useNavigate } from "react-router";
+import { useToast } from "@chakra-ui/react";
 
 const Login = () => {
   const [show, setShow] = useState(false);
   const handleClick = () => setShow(!show);
 
-  const [email, setEmail] = useState();
-  const [password, setPassword] = useState();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const navigate = useNavigate();
+  const toast = useToast();
+
+  const submitHandler = async () => {
+    setLoading(true);
+    if (!email || !password) {
+      toast({
+        title: "Please fill all the feilds",
+        status: "warning",
+        duration: 5000,
+        isClosable: true,
+        position: "bottom",
+      });
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch("http://localhost:8000/api/user/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+      console.log(data);
+
+      if (response.ok) {
+        localStorage.setItem("userInfo", JSON.stringify(data));
+        setLoading(false);
+        // Registration successful
+        toast({
+          title: "Login Successful", // backend sy poora object arha not good to show
+          status: "success",
+          duration: 5000,
+          isClosable: true,
+          position: "bottom",
+        });
+        navigate("/chats");
+      } else {
+        // Registration failed
+        toast({
+          title: data.message || "Failed to login User",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+          position: "bottom",
+        });
+      }
+    } catch (e) {
+      console.log(e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <>
@@ -51,7 +111,7 @@ const Login = () => {
           colorScheme="blue"
           width="100%"
           style={{ marginTop: 15 }}
-          //   onClick={submitHandler}
+          onClick={submitHandler}
           isLoading={loading}
         >
           Login

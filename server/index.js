@@ -2,17 +2,27 @@ const express = require("express");
 const dotenv = require("dotenv");
 require("./db/conn");
 dotenv.config();
-// const userRoutes = require("./routes/userRoutes");
+const userRoutes = require("./routes/userRoutes");
+const { notFound } = require("./middleware/errorMiddleware");
+const cors = require("cors");
 
-// middlewares
 const app = express();
 
+// middlewares
+app.use(express.json());
+
+app.use(cors());
+
 // routes
-// app.use("/api/user", userRoutes);
+app.use("/api/user", userRoutes);
 
 app.get("/", (req, res) => {
   res.send("API is running..");
 });
+
+// Error Handling middlewares
+app.use(notFound);
+// app.use(errorHandler);
 
 PORT = 8000;
 
