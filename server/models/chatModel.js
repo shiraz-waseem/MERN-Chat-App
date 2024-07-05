@@ -8,7 +8,7 @@ const chatSchema = mongoose.Schema(
     users: [
       {
         type: mongoose.Schema.Types.ObjectId, // this will contain id to that particiular user a single user will store
-        ref: User, // Ref to User model
+        ref: "User", // Ref to User model
       },
     ],
     latestMessage: {

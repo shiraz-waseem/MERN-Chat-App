@@ -57,4 +57,27 @@ const authUser = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { registerUser, authUser };
+// api/user?search=shiraz
+const allUsers = asyncHandler(async (req, res) => {
+  // sending data to backend through body. But we dont want to send POST request so we will use queries
+
+  // if there is any query inside of it we will search that in name or email. we will Or operator if either of these expressions is true return
+  // if anyone of it matches return. What is i? the case insensitive match upper and lower both.
+  // regex pattern matches
+  // if dont match do nothing
+  const keyword = req.query.search
+    ? {
+        $or: [
+          { name: { $regex: req.query.search, $options: "i" } },
+          { email: { $regex: req.query.search, $options: "i" } },
+        ],
+      }
+    : {}; // nothing
+
+  // querying the database. Will find in the databases the keyword. We dont want the user that is logged in to be display
+  // so req.user.id wala that is current logged in user dont return it not equal baqi return all.
+  const users = await User.find(keyword).find({ _id: { $ne: req.user._id } });
+  res.send(users);
+});
+
+module.exports = { registerUser, authUser, allUsers };
