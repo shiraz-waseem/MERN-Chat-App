@@ -21,7 +21,7 @@ import { ViewIcon } from "@chakra-ui/icons";
 import UserBadgeItem from "../userAvatar/UserBadgeItem";
 import UserListItem from "../userAvatar/UserListItem";
 
-const UpdateGroupChatModal = ({ fetchAgain, setFetchAgain }) => {
+const UpdateGroupChatModal = ({ fetchAgain, setFetchAgain, fetchMessages }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [groupChatName, setGroupChatName] = useState();
   const [selectedUser, setSelectedUser] = useState([]);
@@ -67,6 +67,7 @@ const UpdateGroupChatModal = ({ fetchAgain, setFetchAgain }) => {
         // setSelectedChat(data);
         user1._id === user._id ? setSelectedChat() : setSelectedChat(data); // apna apko remove tw chatUnselect hujaya
         setFetchAgain(!fetchAgain);
+        fetchMessages();
         // fetchMessages()
         setLoading(false);
       }
