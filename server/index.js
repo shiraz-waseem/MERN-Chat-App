@@ -4,6 +4,7 @@ require("./db/conn");
 dotenv.config();
 const userRoutes = require("./routes/userRoutes");
 const chatRoutes = require("./routes/chatRoutes");
+const messageRoutes = require("./routes/messageRoute");
 const { notFound } = require("./middleware/errorMiddleware");
 const cors = require("cors");
 
@@ -17,6 +18,7 @@ app.use(cors());
 // routes
 app.use("/api/user", userRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/message", messageRoutes);
 
 app.get("/", (req, res) => {
   res.send("API is running..");
