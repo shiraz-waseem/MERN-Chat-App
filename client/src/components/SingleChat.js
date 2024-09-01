@@ -23,8 +23,13 @@ import {
 import ProfileModal from "./miscellaneous/ProfileModal";
 import UpdateGroupChatModal from "./miscellaneous/UpdateGroupChatModal";
 import ScrollableFeed from "react-scrollable-feed";
-
 import "./styles.css";
+import io from "socket.io-client";
+import Lottie from "react-lottie";
+import animationData from "../animations/typing.json";
+
+const ENDPOINT = "http://localhost:8000"; // deploy py change
+var socket, selectedChatCompare;
 
 const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   const [messages, setMessages] = useState([]); // fetch all backend messages
@@ -33,14 +38,54 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   const [istyping, setIsTyping] = useState(false); // dosra banda
 
   const [loading, setLoading] = useState(false);
+  const [socketConnected, setSocketConnected] = useState(false);
   const { selectedChat, user, setSelectedChat } = ChatState();
   const toast = useToast();
 
   // console.log("Selected chat", selectedChat);
 
+  const defaultOptions = {
+    loop: true,
+    autoplay: true,
+    animationData: animationData,
+    rendererSettings: {
+      preserveAspectRatio: "xMidYMid slice",
+    },
+  };
+
   useEffect(() => {
     fetchMessages();
+
+    selectedChatCompare = selectedChat; // backup
   }, [selectedChat]);
+
+  useEffect(() => {
+    socket = io(ENDPOINT);
+    socket.emit("setup", user);
+    // as it return we change the state
+    socket.on("connected", () => setSocketConnected(true)); // jo room bana rhy wo connected
+
+    // neeche call ki then server ne emit kia and here we get it as this useEffect always being call
+    socket.on("typing", () => setIsTyping(true));
+    socket.on("stop typing", () => setIsTyping(false));
+  }, []);
+
+  // remove dependencies because we want to update it always
+  useEffect(() => {
+    // if we receive we will put in chat
+    socket.on("message received", (newMessageRecieved) => {
+      // console.log("Ids:", newMessageRecieved.chat._id, selectedChatCompare._id);
+      // if I am in guest chat and we want it to be display it other chat
+      if (
+        !selectedChatCompare ||
+        selectedChatCompare._id !== newMessageRecieved.chat._id // chat id tw same huni chae na
+      ) {
+        // give notification
+      } else {
+        setMessages([...messages, newMessageRecieved]);
+      }
+    });
+  });
 
   const fetchMessages = async () => {
     if (!selectedChat) {
@@ -64,6 +109,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
 
       setMessages(data);
       setLoading(false);
+      socket.emit("join chat", selectedChat._id);
     } catch (error) {
       setLoading(false);
       toast({
@@ -80,6 +126,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   const sendMessage = async (event) => {
     if (event.key === "Enter" && newMessage) {
       // alert(newMessage);
+      socket.emit("stop typing", selectedChat._id);
 
       setNewMessage(""); // wont affect api call since the function is asynchronous
       try {
@@ -99,7 +146,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
 
         // Whatever we are getting we are going to append it to array of all messages
         // As the chat has some messages and when we send some messages the all messages array must append it
-
+        socket.emit("new message", data);
         setMessages([...messages, data]); // jo messages wo and add data
       } catch (error) {
         toast({
@@ -114,10 +161,33 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
     }
   };
 
+  // everytime we type it will run as onChange ha
   const typingHandler = (e) => {
     setNewMessage(e.target.value);
 
-    // Typing Indicator Logic
+    if (!socketConnected) return; // useEffect mein true krwaya on socket on
+
+    // user ne likhna shru kia for now false tha true kia and emit krdia server ko send krdi request and done.. Baar baar na bheje requsest is lia false py chala ga
+    if (!typing) {
+      // jab tk typing ruk nahi jati (false rehti)
+      setTyping(true); // jaisay typing ruk jaye setTyping true
+      socket.emit("typing", selectedChat._id); // sending in that room. It send request to backend and backend send request again and on that request setIsTyping either get true or false and that one we show
+    }
+
+    // after user is not typing anymore
+    let lastTypingTime = new Date().getTime();
+    var timerLength = 3000; // stopping time after 3 seconds
+
+    // har teen second baad
+    setTimeout(() => {
+      var timeNow = new Date().getTime();
+      var timeDiff = timeNow - lastTypingTime;
+      if (timeDiff >= timerLength && typing) {
+        // true krdi thy na // typing is going on
+        socket.emit("stop typing", selectedChat._id);
+        setTyping(false); // 3 secs ruka stop krdia
+      }
+    }, timerLength);
   };
 
   return (
@@ -185,7 +255,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
               <div className="messages">
                 <ScrollableFeed>
                   {messages &&
-                    messages.map((m, i) => (
+                    messages?.map((m, i) => (
                       <div style={{ display: "flex" }} key={m._id}>
                         {/* left side we have picture, right side we dont have. Profile picture at bottom of the message 3 ha tw third py */}
                         {/* any of these true */}
@@ -241,7 +311,20 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
               isRequired
               mt={3}
             >
-              {istyping ? <div>Someone is Typing...</div> : <></>}
+              {istyping ? (
+                // Someone is typing
+                <div>
+                  <Lottie
+                    options={defaultOptions}
+                    // height={50}
+                    width={70}
+                    style={{ marginBottom: 15, marginLeft: 0 }}
+                  />
+                </div>
+              ) : (
+                <></>
+              )}
+
               <Input
                 variant="filled"
                 bg="#E0E0E0"
