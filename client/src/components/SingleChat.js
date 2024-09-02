@@ -39,10 +39,13 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
 
   const [loading, setLoading] = useState(false);
   const [socketConnected, setSocketConnected] = useState(false);
-  const { selectedChat, user, setSelectedChat } = ChatState();
+  const { selectedChat, user, setSelectedChat, notification, setNotification } =
+    ChatState();
   const toast = useToast();
 
   // console.log("Selected chat", selectedChat);
+
+  console.log("-----", notification);
 
   const defaultOptions = {
     loop: true,
@@ -81,6 +84,12 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
         selectedChatCompare._id !== newMessageRecieved.chat._id // chat id tw same huni chae na
       ) {
         // give notification
+        // if the notification array doesnt include the newMessagereceive so we will add in it
+        if (!notification.includes(newMessageRecieved)) {
+          setNotification([newMessageRecieved, ...notification]);
+          // update the latest messages. when we receive message
+          setFetchAgain(!fetchAgain); // fetchAllChats
+        }
       } else {
         setMessages([...messages, newMessageRecieved]);
       }
